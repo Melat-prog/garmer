@@ -1,0 +1,39 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.default {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-800);
+}
+
+.primary {
+  background-color: var(--color-primary-navy);
+  color: var(--color-white);
+}
+
+.success {
+  background-color: #D1FAE5; /* Light green */
+  color: var(--color-success);
+}
+
+.warning {
+  background-color: #FEF3C7; /* Light yellow */
+  color: var(--color-warning);
+}
+
+.error {
+  background-color: #FEE2E2; /* Light red */
+  color: var(--color-error);
+}
+
+.gold {
+  background-color: #FEF3C7; /* Light gold background */
+  color: var(--color-primary-gold);
+}

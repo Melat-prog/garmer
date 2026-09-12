@@ -1,0 +1,121 @@
+.layout {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--spacing-8) var(--spacing-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-8);
+}
+
+@media (min-width: 992px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-12);
+  }
+}
+
+.imageGallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.mainImage {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background-color: var(--color-gray-100);
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+}
+
+.thumbnails {
+  display: flex;
+  gap: var(--spacing-4);
+  overflow-x: auto;
+}
+
+.thumbnail {
+  width: 80px;
+  height: 80px;
+  background-color: var(--color-gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.productInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-gray-900);
+  margin-bottom: var(--spacing-2);
+}
+
+.priceBlock {
+  margin: var(--spacing-4) 0;
+  padding: var(--spacing-4);
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary-navy);
+}
+
+.moq {
+  font-size: 1rem;
+  color: var(--color-gray-600);
+}
+
+.specs {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--spacing-4);
+  margin: var(--spacing-6) 0;
+  font-size: 0.9rem;
+}
+
+.specLabel {
+  color: var(--color-gray-500);
+  font-weight: 500;
+}
+
+.specValue {
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-8);
+}
+
+.supplierCard {
+  margin-top: var(--spacing-12);
+}
+
+.supplierHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.supplierLogo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: var(--color-gray-200);
+}

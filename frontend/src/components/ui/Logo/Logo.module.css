@@ -1,0 +1,42 @@
+.logoContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.logoCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-primary-navy);
+  border: 2px solid var(--color-primary-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-gold);
+  font-weight: bold;
+  font-size: 1.25rem;
+  letter-spacing: -1px;
+}
+
+.wordmark {
+  color: var(--color-primary-navy);
+  font-weight: 800;
+  font-size: 1.25rem;
+  margin-left: 0.5rem;
+}
+
+.logoMain {
+  display: flex;
+  align-items: center;
+}
+
+.tagline {
+  font-size: 0.65rem;
+  color: var(--color-gray-500);
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+}

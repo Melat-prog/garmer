@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SUPPLIER
+  ADMIN
+}
+
+enum InquiryStatus {
+  PENDING
+  RESPONDED
+  CLOSED
+}
+
+enum NotificationType {
+  NEW_INQUIRY
+  INQUIRY_UPDATED
+  NEW_MESSAGE
+  SYSTEM
+}
+
+model User {
+  id           String   @id @default(uuid())
+  firebaseUid  String   @unique
+  email        String   @unique
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  buyerProfile    BuyerProfile?
+  supplierProfile SupplierProfile?
+  
+  sentMessages    Message[] @relation("MessageSender")
+  notifications   Notification[]
+}
+
+model BuyerProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  contactName String
+  phone       String?
+  country     String?
+  
+  inquiries         Inquiry[]
+  favoriteProducts  FavoriteProduct[]
+  favoriteSuppliers FavoriteSupplier[]
+}
+
+model SupplierProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName     String
+  logoUrl         String?
+  location        String
+  yearsInBusiness Int
+  isVerified      Boolean  @default(false)
+  description     String?
+  
+  products          Product[]
+  certificates      Certificate[]
+  reviews           Review[]
+  inquiries         Inquiry[]
+  favoritedBy       FavoriteSupplier[]
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  parentId String?
+  parent   Category? @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
+  
+  products Product[]
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  supplierId        String
+  supplier          SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  categoryId        String
+  category          Category @relation(fields: [categoryId], references: [id])
+  name              String
+  description       String
+  price             Float?
+  moq               Int
+  fabric            String?
+  colors            String[]
+  sizes             String[]
+  stock             Int      @default(0)
+  deliveryTimeDays  Int?
+  countryOfOrigin   String?
+  productionCapacity String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  images      ProductImage[]
+  inquiries   Inquiry[]
+  favoritedBy FavoriteProduct[]
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean @default(false)
+}
+
+model Certificate {
+  id         String  @id @default(uuid())
+  supplierId String
+  supplier   SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name       String
+  url        String
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  supplierId String
+  supplier   SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  buyerId    String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+model Inquiry {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  buyerId     String
+  buyer       BuyerProfile @relation(fields: [buyerId], references: [id])
+  supplierId  String
+  supplier    SupplierProfile @relation(fields: [supplierId], references: [id])
+  quantity    Int
+  country     String
+  message     String
+  status      InquiryStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  conversation Conversation?
+}
+
+model Conversation {
+  id         String   @id @default(uuid())
+  inquiryId  String   @unique
+  inquiry    Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  messages   Message[]
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation("MessageSender", fields: [senderId], references: [id])
+  content        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model FavoriteProduct {
+  id        String       @id @default(uuid())
+  buyerId   String
+  buyer     BuyerProfile @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([buyerId, productId])
+}
+
+model FavoriteSupplier {
+  id         String          @id @default(uuid())
+  buyerId    String
+  buyer      BuyerProfile    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+
+  @@unique([buyerId, supplierId])
+}
