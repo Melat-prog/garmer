@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { Card, CardHeader, CardContent } from '../../../../../components/ui/Card/Card';
-import { Button } from '../../../../../components/ui/Button/Button';
-import { Badge } from '../../../../../components/ui/Badge/Badge';
-import { Input } from '../../../../../components/ui/Input/Input';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card/Card';
+import { Button } from '@/components/ui/Button/Button';
+import { Badge } from '@/components/ui/Badge/Badge';
+import { Input } from '@/components/ui/Input/Input';
 
 export default function AdminProducts() {
   const [search, setSearch] = useState('');

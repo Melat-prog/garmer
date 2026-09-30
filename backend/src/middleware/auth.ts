@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import admin from '../config/firebase';
+import { adminAuth } from '../config/firebase';
 import { prisma } from '../models/prisma';
 
 export interface AuthenticatedRequest extends Request {
@@ -20,7 +20,7 @@ export const authenticate = async (req: AuthenticatedRequest, res: Response, nex
     }
 
     const token = authHeader.split(' ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     
     // Find user in database
     const user = await prisma.user.findUnique({

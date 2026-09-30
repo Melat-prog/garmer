@@ -1,11 +1,11 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent } from '../../components/ui/Card/Card';
 import { Input } from '../../components/ui/Input/Input';
 import { Button } from '../../components/ui/Button/Button';
 
-export default function RequestQuotation() {
+function RequestQuotationForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const productId = searchParams?.get('product');
@@ -102,5 +102,13 @@ export default function RequestQuotation() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function RequestQuotation() {
+  return (
+    <Suspense fallback={<div style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>Loading inquiry form...</div>}>
+      <RequestQuotationForm />
+    </Suspense>
   );
 }

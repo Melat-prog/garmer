@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../models/prisma';
-import admin from '../config/firebase';
+import { adminAuth } from '../config/firebase';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Verify firebase token
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({

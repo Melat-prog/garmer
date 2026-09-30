@@ -30,6 +30,13 @@ class ApiService {
   }
 
   // Auth endpoints
+  async register(data: any) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
   async getMe() {
     return this.request('/auth/me');
   }

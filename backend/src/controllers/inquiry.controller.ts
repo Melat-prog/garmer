@@ -66,7 +66,7 @@ export const getInquiries = async (req: AuthenticatedRequest, res: Response): Pr
     const userId = req.user?.id;
     const role = req.user?.role;
 
-    let inquiries = [];
+    let inquiries: any[] = [];
 
     if (role === 'BUYER') {
       const buyer = await prisma.buyerProfile.findUnique({ where: { userId } });
@@ -112,7 +112,7 @@ export const getInquiries = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const getInquiryById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user?.id;
     const role = req.user?.role;
 
@@ -149,7 +149,7 @@ export const getInquiryById = async (req: AuthenticatedRequest, res: Response): 
 
 export const updateInquiryStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
     const userId = req.user?.id;
 

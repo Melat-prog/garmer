@@ -1,9 +1,9 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { Card, CardContent } from '../../../../../components/ui/Card/Card';
-import { Button } from '../../../../../components/ui/Button/Button';
-import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Card, CardContent } from '@/components/ui/Card/Card';
+import { Button } from '@/components/ui/Button/Button';
+import { Badge } from '@/components/ui/Badge/Badge';
 
 export default function SavedProducts() {
   return (

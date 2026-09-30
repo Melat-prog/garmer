@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent } from '../../components/ui/Card/Card';
@@ -9,7 +9,26 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { api } from '../../lib/api';
 
-export default function Register() {
+function getFriendlyRegisterError(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'An account with this email address already exists. Please log in instead.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters long.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/network-request-failed':
+      return 'Network connection error. Please check your internet connection and try again.';
+    case 'auth/api-key-not-valid.':
+    case 'auth/invalid-api-key':
+      return 'Firebase Authentication is not yet configured. Please set your credentials in frontend/.env.local.';
+    default:
+      return error?.message || 'Registration failed. Please check your details and try again.';
+  }
+}
+
+function RegisterForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialRole = searchParams?.get('role') === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER';
@@ -29,34 +48,58 @@ export default function Register() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
+      return;
+    }
+
+    if (!formData.companyName.trim()) {
+      setError('Company name is required.');
+      return;
+    }
+
+    if (role === 'BUYER' && !formData.contactName.trim()) {
+      setError('Contact name is required for Buyer registration.');
+      return;
+    }
+
+    if (role === 'SUPPLIER' && (!formData.location.trim() || !formData.yearsInBusiness)) {
+      setError('Location and years in business are required for Supplier registration.');
       return;
     }
 
     setLoading(true);
     try {
       // 1. Create user in Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, formData.password);
       const token = await userCredential.user.getIdToken();
       
       // 2. Register with backend
-      await api.request('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          token,
-          role,
-          companyName: formData.companyName,
-          contactName: formData.contactName,
-          location: formData.location,
-          yearsInBusiness: formData.yearsInBusiness
-        })
+      await api.register({
+        token,
+        role,
+        companyName: formData.companyName,
+        contactName: formData.contactName,
+        location: formData.location,
+        yearsInBusiness: formData.yearsInBusiness
       });
       
       // Store token
@@ -65,8 +108,8 @@ export default function Register() {
       // Redirect to dashboard
       router.push(`/dashboard/${role.toLowerCase()}`);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Registration failed');
+      console.error('Registration error:', err);
+      setError(getFriendlyRegisterError(err));
     } finally {
       setLoading(false);
     }
@@ -104,7 +147,21 @@ export default function Register() {
             </Button>
           </div>
 
-          {error && <div style={{ color: 'var(--color-error)', marginBottom: 'var(--spacing-4)', textAlign: 'center' }}>{error}</div>}
+          {error && (
+            <div 
+              style={{ 
+                color: 'var(--color-error, #d32f2f)', 
+                backgroundColor: '#fde8e8', 
+                padding: '0.75rem 1rem', 
+                borderRadius: '0.375rem', 
+                marginBottom: 'var(--spacing-4)', 
+                fontSize: '0.875rem', 
+                textAlign: 'center' 
+              }}
+            >
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
             <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} required />
@@ -138,5 +195,13 @@ export default function Register() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function Register() {
+  return (
+    <Suspense fallback={<div style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>Loading registration form...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

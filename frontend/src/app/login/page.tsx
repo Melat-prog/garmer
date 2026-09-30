@@ -9,6 +9,27 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { api } from '../../lib/api';
 
+function getFriendlyAuthError(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Invalid email or password. Please check your credentials and try again.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Access to this account has been temporarily disabled due to many failed login attempts. You can reset your password or try again later.';
+    case 'auth/network-request-failed':
+      return 'Network connection error. Please check your internet connection and try again.';
+    case 'auth/api-key-not-valid.':
+    case 'auth/invalid-api-key':
+      return 'Firebase Authentication is not yet configured. Please set your credentials in frontend/.env.local.';
+    default:
+      return error?.message || 'Failed to log in. Please try again.';
+  }
+}
+
 export default function Login() {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -17,29 +38,37 @@ export default function Login() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail || !formData.password) {
+      setError('Please fill in both email and password.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       // 1. Firebase Login
-      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, formData.password);
       const token = await userCredential.user.getIdToken();
       
       localStorage.setItem('auth_token', token);
       
       // 2. Fetch User Profile from Backend to determine role
       const res: any = await api.getMe();
-      const role = res.user.role.toLowerCase();
+      const role = res?.user?.role?.toLowerCase() || 'buyer';
       
       // 3. Redirect
       router.push(`/dashboard/${role}`);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Invalid email or password');
+      console.error('Login error:', err);
+      setError(getFriendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -58,7 +87,21 @@ export default function Login() {
 
       <Card>
         <CardContent>
-          {error && <div style={{ color: 'var(--color-error)', marginBottom: 'var(--spacing-4)', textAlign: 'center' }}>{error}</div>}
+          {error && (
+            <div 
+              style={{ 
+                color: 'var(--color-error, #d32f2f)', 
+                backgroundColor: '#fde8e8', 
+                padding: '0.75rem 1rem', 
+                borderRadius: '0.375rem', 
+                marginBottom: 'var(--spacing-4)', 
+                fontSize: '0.875rem', 
+                textAlign: 'center' 
+              }}
+            >
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
             <Input label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} required />

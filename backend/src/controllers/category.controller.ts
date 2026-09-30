@@ -36,7 +36,7 @@ export const createCategory = async (req: AuthenticatedRequest, res: Response): 
 
 export const deleteCategory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     if (req.user?.role !== 'ADMIN') {
       res.status(403).json({ error: 'Only admins can delete categories' });
