@@ -1,64 +1,98 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import styles from './page.module.css';
 import { Button } from '../../../components/ui/Button/Button';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { Card, CardContent } from '../../../components/ui/Card/Card';
+import { api } from '../../../lib/api';
 
 export default function ProductDetails() {
   const { id } = useParams();
-  
-  // Mock data for development
-  const product = {
-    id: id as string,
-    name: 'Premium Cotton T-Shirt',
-    description: 'High quality 100% organic cotton t-shirt with custom branding options. Perfect for retail or corporate events. Features double-stitched hems and a comfortable modern fit.',
-    price: 12.50,
-    moq: 100,
-    fabric: '100% Organic Cotton, 180gsm',
-    colors: ['White', 'Black', 'Navy', 'Heather Grey'],
-    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-    deliveryTimeDays: 14,
-    countryOfOrigin: 'China',
-    supplier: {
-      id: 'sup-1',
-      companyName: 'Global Garments Ltd',
-      location: 'Guangzhou, China',
-      yearsInBusiness: 12,
-      isVerified: true,
-      rating: 4.8,
-      reviewsCount: 156
-    }
-  };
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        const res: any = await api.getProduct(id as string);
+        setProduct(res?.product || null);
+      } catch (err: any) {
+        console.error('Error fetching product details:', err);
+        setError(err.message || 'Product not found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: 'var(--spacing-16)', textAlign: 'center', color: 'var(--color-gray-500)' }}>
+        Loading product details...
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div style={{ maxWidth: '600px', margin: 'var(--spacing-16) auto', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 'var(--spacing-4)' }}>Product Not Found</h2>
+        <p style={{ color: 'var(--color-gray-600)', marginBottom: 'var(--spacing-6)' }}>The requested product does not exist or has been removed.</p>
+        <Link href="/products">
+          <Button variant="primary">Back to Marketplace</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const supplier = product.supplier || {};
+  const images = product.images || [];
+  const mainImage = images.find((img: any) => img.isPrimary)?.url || images[0]?.url;
 
   return (
     <div className={styles.layout}>
       <div className={styles.grid}>
         {/* Images */}
         <div className={styles.imageGallery}>
-          <div className={styles.mainImage}></div>
-          <div className={styles.thumbnails}>
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className={styles.thumbnail}></div>
-            ))}
-          </div>
+          <div 
+            className={styles.mainImage}
+            style={mainImage ? { backgroundImage: `url(${mainImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+          />
+          {images.length > 1 && (
+            <div className={styles.thumbnails}>
+              {images.map((img: any, i: number) => (
+                <div 
+                  key={img.id || i} 
+                  className={styles.thumbnail}
+                  style={{ backgroundImage: `url(${img.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product Info */}
         <div className={styles.productInfo}>
           <div style={{ display: 'flex', gap: 'var(--spacing-2)', marginBottom: 'var(--spacing-2)' }}>
-            <Badge variant="default">T-Shirts</Badge>
-            <Badge variant="success">In Stock</Badge>
+            <Badge variant="default">{product.category?.name || 'Garment'}</Badge>
+            <Badge variant="success">In Stock ({product.stock || 0})</Badge>
           </div>
           
           <h1 className={styles.title}>{product.name}</h1>
-          <p style={{ color: 'var(--color-gray-600)' }}>{product.description}</p>
+          <p style={{ color: 'var(--color-gray-600)', lineHeight: 1.6 }}>{product.description}</p>
           
           <div className={styles.priceBlock}>
             <div>
-              <div className={styles.price}>${product.price.toFixed(2)}</div>
+              <div className={styles.price}>
+                {product.price != null ? `$${Number(product.price).toFixed(2)}` : 'Inquire for price'}
+              </div>
               <div style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>per piece / FOB</div>
             </div>
             <div className={styles.moq}>
@@ -67,34 +101,45 @@ export default function ProductDetails() {
           </div>
 
           <div className={styles.specs}>
-            <div className={styles.specLabel}>Fabric</div>
-            <div className={styles.specValue}>{product.fabric}</div>
+            {product.fabric && (
+              <>
+                <div className={styles.specLabel}>Fabric</div>
+                <div className={styles.specValue}>{product.fabric}</div>
+              </>
+            )}
             
-            <div className={styles.specLabel}>Available Colors</div>
-            <div className={styles.specValue}>{product.colors.join(', ')}</div>
+            {product.colors && product.colors.length > 0 && (
+              <>
+                <div className={styles.specLabel}>Available Colors</div>
+                <div className={styles.specValue}>{product.colors.join(', ')}</div>
+              </>
+            )}
             
-            <div className={styles.specLabel}>Available Sizes</div>
-            <div className={styles.specValue}>{product.sizes.join(', ')}</div>
+            {product.sizes && product.sizes.length > 0 && (
+              <>
+                <div className={styles.specLabel}>Available Sizes</div>
+                <div className={styles.specValue}>{product.sizes.join(', ')}</div>
+              </>
+            )}
             
-            <div className={styles.specLabel}>Lead Time</div>
-            <div className={styles.specValue}>{product.deliveryTimeDays} days</div>
+            {product.deliveryTimeDays && (
+              <>
+                <div className={styles.specLabel}>Lead Time</div>
+                <div className={styles.specValue}>{product.deliveryTimeDays} days</div>
+              </>
+            )}
             
-            <div className={styles.specLabel}>Origin</div>
-            <div className={styles.specValue}>{product.countryOfOrigin}</div>
+            {product.countryOfOrigin && (
+              <>
+                <div className={styles.specLabel}>Origin</div>
+                <div className={styles.specValue}>{product.countryOfOrigin}</div>
+              </>
+            )}
           </div>
 
           <div className={styles.actions}>
             <Link href={`/inquire?product=${product.id}`} style={{ flex: 1 }}>
               <Button variant="primary" size="lg" fullWidth>Request Quotation</Button>
-            </Link>
-            <Button variant="outline" size="lg" aria-label="Save to favorites">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-            </Button>
-          </div>
-          
-          <div style={{ marginTop: 'var(--spacing-4)', textAlign: 'center' }}>
-            <Link href={`/messages/new?supplier=${product.supplier.id}`}>
-              <Button variant="ghost">Chat with Supplier</Button>
             </Link>
           </div>
         </div>
@@ -104,32 +149,33 @@ export default function ProductDetails() {
       <Card className={styles.supplierCard}>
         <CardContent>
           <div className={styles.supplierHeader}>
-            <div className={styles.supplierLogo}></div>
+            <div 
+              className={styles.supplierLogo}
+              style={supplier.logoUrl ? { backgroundImage: `url(${supplier.logoUrl})`, backgroundSize: 'cover' } : {}}
+            />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{product.supplier.companyName}</h3>
-                {product.supplier.isVerified && <Badge variant="gold">Verified</Badge>}
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{supplier.companyName || 'GarMer Supplier'}</h3>
+                {supplier.isVerified && <Badge variant="gold">Verified</Badge>}
               </div>
               <p style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>
-                {product.supplier.location} • {product.supplier.yearsInBusiness} Years in Business
+                {supplier.location || 'Location Not Specified'} • {supplier.yearsInBusiness || 0} Years in Business
               </p>
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: 'var(--spacing-8)', marginTop: 'var(--spacing-6)' }}>
+          <div style={{ display: 'flex', gap: 'var(--spacing-8)', marginTop: 'var(--spacing-6)', alignItems: 'center', flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{product.supplier.rating}/5</div>
-              <div style={{ color: 'var(--color-gray-500)', fontSize: '0.875rem' }}>{product.supplier.reviewsCount} Reviews</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>Verified Supplier</div>
+              <div style={{ color: 'var(--color-gray-500)', fontSize: '0.875rem' }}>GarMer Certified</div>
             </div>
-            <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>98%</div>
-              <div style={{ color: 'var(--color-gray-500)', fontSize: '0.875rem' }}>Response Rate</div>
-            </div>
-            <div style={{ marginLeft: 'auto', alignSelf: 'center' }}>
-              <Link href={`/suppliers/${product.supplier.id}`}>
-                <Button variant="outline">View Full Profile</Button>
-              </Link>
-            </div>
+            {supplier.id && (
+              <div style={{ marginLeft: 'auto' }}>
+                <Link href={`/suppliers/${supplier.id}`}>
+                  <Button variant="outline">View Full Profile</Button>
+                </Link>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -1,14 +1,19 @@
 'use client';
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent } from '../../components/ui/Card/Card';
 import { Input } from '../../components/ui/Input/Input';
 import { Button } from '../../components/ui/Button/Button';
+import { api } from '../../lib/api';
 
 function RequestQuotationForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const productId = searchParams?.get('product');
+
+  const [product, setProduct] = useState<any>(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     quantity: '',
@@ -18,17 +23,57 @@ function RequestQuotationForm() {
   
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!productId) {
+      setLoadingProduct(false);
+      return;
+    }
+
+    const fetchProduct = async () => {
+      try {
+        setLoadingProduct(true);
+        const res: any = await api.getProduct(productId);
+        setProduct(res?.product || null);
+        if (res?.product?.moq) {
+          setFormData(prev => ({ ...prev, quantity: String(res.product.moq) }));
+        }
+      } catch (err: any) {
+        console.error('Error fetching product for inquiry:', err);
+        setError('Failed to load product details.');
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    if (!productId) {
+      setError('No product selected for quotation request.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      await api.createInquiry({
+        productId,
+        quantity: parseInt(formData.quantity, 10),
+        country: formData.country,
+        message: formData.message
+      });
+      router.push('/dashboard/buyer/inquiries?submitted=true');
+    } catch (err: any) {
+      console.error('Submit Inquiry Error:', err);
+      setError(err.message || 'Failed to submit quotation request. Please check if you are logged in as a Buyer.');
+    } finally {
       setSubmitting(false);
-      // Redirect to Buyer Dashboard Inquiry History
-      router.push('/dashboard/buyer?inquirySubmitted=true');
-    }, 1000);
+    }
   };
+
+  const image = product?.images?.[0]?.url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop';
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: 'var(--spacing-12) var(--spacing-4)' }}>
@@ -36,15 +81,39 @@ function RequestQuotationForm() {
         Request Quotation
       </h1>
 
+      {error && (
+        <div style={{ padding: 'var(--spacing-4)', backgroundColor: '#FEE2E2', color: '#991B1B', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-6)' }}>
+          {error}
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-8)' }}>
         <Card>
-          <CardContent style={{ display: 'flex', gap: 'var(--spacing-4)' }}>
-            <div style={{ width: '100px', height: '100px', backgroundColor: 'var(--color-gray-200)', borderRadius: 'var(--radius-md)' }}></div>
-            <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 'var(--spacing-1)' }}>Premium Cotton T-Shirt</h2>
-              <p style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>Supplier: Global Garments Ltd</p>
-              <div style={{ marginTop: 'var(--spacing-2)', color: 'var(--color-gray-500)', fontSize: '0.875rem' }}>MOQ: 100 pcs</div>
-            </div>
+          <CardContent style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'center' }}>
+            {loadingProduct ? (
+              <div style={{ padding: 'var(--spacing-4)' }}>Loading product details...</div>
+            ) : product ? (
+              <>
+                <img 
+                  src={image} 
+                  alt={product.name} 
+                  style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} 
+                />
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 'var(--spacing-1)' }}>{product.name}</h2>
+                  <p style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>
+                    Supplier: {product.supplier?.companyName || 'Verified Supplier'}
+                  </p>
+                  <div style={{ marginTop: 'var(--spacing-2)', color: 'var(--color-gray-500)', fontSize: '0.875rem' }}>
+                    MOQ: {product.moq} pcs
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ color: 'var(--color-gray-500)' }}>
+                Generic Garment RFQ (No specific product selected)
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -55,7 +124,7 @@ function RequestQuotationForm() {
                 <Input 
                   label="Required Quantity" 
                   type="number" 
-                  min="100"
+                  min={product?.moq || 1}
                   required
                   value={formData.quantity}
                   onChange={e => setFormData({...formData, quantity: e.target.value})}
@@ -79,7 +148,7 @@ function RequestQuotationForm() {
                   required
                   value={formData.message}
                   onChange={e => setFormData({...formData, message: e.target.value})}
-                  placeholder="Please include details about colors, sizes, packaging, or custom branding requirements..."
+                  placeholder="Please include details about colors, sizes, packaging, target delivery date, or custom branding requirements..."
                   style={{
                     padding: 'var(--spacing-3)',
                     borderRadius: 'var(--radius-md)',
@@ -94,7 +163,7 @@ function RequestQuotationForm() {
               <div style={{ marginTop: 'var(--spacing-6)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-4)' }}>
                 <Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button>
                 <Button type="submit" variant="primary" disabled={submitting}>
-                  {submitting ? 'Submitting...' : 'Submit Inquiry'}
+                  {submitting ? 'Submitting to Admin...' : 'Submit RFQ to Admin'}
                 </Button>
               </div>
             </form>

@@ -6,6 +6,9 @@ import authRoutes from './routes/auth.routes';
 import productRoutes from './routes/product.routes';
 import inquiryRoutes from './routes/inquiry.routes';
 import categoryRoutes from './routes/category.routes';
+import supplierRoutes from './routes/supplier.routes';
+import { seedCategories } from './config/seed';
+import { seedAdmin } from './config/seedAdmin';
 
 dotenv.config();
 
@@ -23,7 +26,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/inquiries', inquiryRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/suppliers', supplierRoutes);
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server is running on port ${port}`);
+  await seedCategories();
+  await seedAdmin();
 });

@@ -8,7 +8,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   
-  // Determine role based on path for mock purposes
   let role = 'buyer';
   if (pathname?.includes('/supplier')) role = 'supplier';
   if (pathname?.includes('/admin')) role = 'admin';
@@ -18,25 +17,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       case 'buyer':
         return [
           { label: 'Overview', href: '/dashboard/buyer' },
-          { label: 'Inquiries', href: '/dashboard/buyer/inquiries' },
-          { label: 'Saved Products', href: '/dashboard/buyer/saved' },
-          { label: 'Messages', href: '/dashboard/buyer/messages' },
-          { label: 'Settings', href: '/dashboard/buyer/settings' },
+          { label: 'My RFQs & Quotes', href: '/dashboard/buyer/inquiries' },
+          { label: 'Browse Products', href: '/products' },
+          { label: 'Suppliers Catalog', href: '/suppliers' },
         ];
       case 'supplier':
         return [
           { label: 'Overview', href: '/dashboard/supplier' },
-          { label: 'Products', href: '/dashboard/supplier/products' },
-          { label: 'Inquiries', href: '/dashboard/supplier/inquiries' },
-          { label: 'Messages', href: '/dashboard/supplier/messages' },
-          { label: 'Profile', href: '/dashboard/supplier/profile' },
+          { label: 'Forwarded RFQs', href: '/dashboard/supplier/inquiries' },
+          { label: 'Marketplace Products', href: '/products' },
         ];
       case 'admin':
         return [
           { label: 'Overview', href: '/dashboard/admin' },
-          { label: 'Suppliers', href: '/dashboard/admin/suppliers' },
-          { label: 'Products', href: '/dashboard/admin/products' },
-          { label: 'Reports', href: '/dashboard/admin/reports' },
+          { label: 'RFQ Management', href: '/dashboard/admin/inquiries' },
+          { label: 'Suppliers List', href: '/suppliers' },
+          { label: 'Products List', href: '/products' },
         ];
       default:
         return [];
@@ -47,7 +43,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className={styles.layout}>
-      {/* Mobile Sidebar Toggle */}
       <button 
         className={styles.mobileToggle}
         onClick={() => setMobileOpen(!mobileOpen)}

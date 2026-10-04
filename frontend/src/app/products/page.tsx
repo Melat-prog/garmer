@@ -8,29 +8,45 @@ import { Badge } from '../../components/ui/Badge/Badge';
 import { Input } from '../../components/ui/Input/Input';
 import { api } from '../../lib/api';
 
-const categories = ['Jackets', 'T-Shirts', 'Shirts', 'Hoodies', 'Jeans', "Women's Wear", 'Kids Wear', 'Accessories'];
-const countries = ['China', 'Ethiopia', 'Kenya', 'Vietnam', 'Bangladesh'];
-
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res: any = await api.getCategories();
+        setCategories(res?.categories || []);
+      } catch (err) {
+        console.error('Error loading categories:', err);
+      }
+    };
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data: any = await api.getProducts();
+        const params: Record<string, string> = {};
+        if (searchQuery.trim()) params.query = searchQuery.trim();
+        if (selectedCategory) params.category = selectedCategory;
+
+        const data: any = await api.getProducts(params);
         setProducts(data.products || []);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching products:', err);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchProducts();
-  }, []);
+    const timeoutId = setTimeout(fetchProducts, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, selectedCategory]);
   
   return (
     <div className={styles.layout}>
@@ -38,9 +54,9 @@ export default function ProductsPage() {
       <aside className={styles.sidebar}>
         <div style={{ position: 'sticky', top: '100px' }}>
           <div className={styles.filterSection}>
-            <h3 className={styles.filterTitle}>Search</h3>
+            <h3 className={styles.filterTitle}>Search Products</h3>
             <Input 
-              placeholder="Search products..." 
+              placeholder="e.g. Cotton T-Shirt, Jacket..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -49,32 +65,24 @@ export default function ProductsPage() {
           <div className={styles.filterSection}>
             <h3 className={styles.filterTitle}>Category</h3>
             <div className={styles.checkboxList}>
-              {categories.map(cat => (
-                <label key={cat} className={styles.checkboxLabel}>
-                  <input type="checkbox" /> {cat}
+              <label key="all" className={styles.checkboxLabel}>
+                <input 
+                  type="radio" 
+                  name="category" 
+                  checked={selectedCategory === ''} 
+                  onChange={() => setSelectedCategory('')} 
+                /> All Categories
+              </label>
+              {categories.map((cat: any) => (
+                <label key={cat.id} className={styles.checkboxLabel}>
+                  <input 
+                    type="radio" 
+                    name="category" 
+                    checked={selectedCategory === cat.id} 
+                    onChange={() => setSelectedCategory(cat.id)} 
+                  /> {cat.name}
                 </label>
               ))}
-            </div>
-          </div>
-          
-          <div className={styles.filterSection}>
-            <h3 className={styles.filterTitle}>Origin Country</h3>
-            <div className={styles.checkboxList}>
-              {countries.map(country => (
-                <label key={country} className={styles.checkboxLabel}>
-                  <input type="checkbox" /> {country}
-                </label>
-              ))}
-            </div>
-          </div>
-          
-          <div className={styles.filterSection}>
-            <h3 className={styles.filterTitle}>Minimum Order</h3>
-            <div className={styles.checkboxList}>
-              <label className={styles.checkboxLabel}><input type="radio" name="moq" /> Any</label>
-              <label className={styles.checkboxLabel}><input type="radio" name="moq" /> &lt; 100 pcs</label>
-              <label className={styles.checkboxLabel}><input type="radio" name="moq" /> 100 - 500 pcs</label>
-              <label className={styles.checkboxLabel}><input type="radio" name="moq" /> &gt; 500 pcs</label>
             </div>
           </div>
         </div>
@@ -86,45 +94,55 @@ export default function ProductsPage() {
           <h1 className={styles.title}>Marketplace Products</h1>
           <div style={{ display: 'flex', gap: 'var(--spacing-4)', alignItems: 'center' }}>
             <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>{products.length} results</span>
-            <select style={{ padding: '0.5rem', borderRadius: '0.25rem', border: '1px solid var(--color-gray-300)' }}>
-              <option>Recommended</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Newest Arrivals</option>
-            </select>
           </div>
         </div>
 
         {loading ? (
-          <div>Loading products...</div>
+          <div style={{ padding: 'var(--spacing-12)', textAlign: 'center', color: 'var(--color-gray-500)' }}>
+            Loading products...
+          </div>
+        ) : products.length === 0 ? (
+          <div style={{ padding: 'var(--spacing-12)', textAlign: 'center', color: 'var(--color-gray-500)' }}>
+            <p style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: 'var(--spacing-2)' }}>No products found</p>
+            <p>Try adjusting your search query or category filters.</p>
+          </div>
         ) : (
           <div className={styles.grid}>
-            {products.map(product => (
-              <Link href={`/products/${product.id}`} key={product.id}>
-                <Card className={styles.productCard} hoverable>
-                  <div className={styles.productImage}></div>
-                  <div className={styles.productInfo}>
-                    <h3 className={styles.productTitle}>{product.name}</h3>
-                    <div className={styles.productSupplier}>
-                      {product.supplier?.supplierProfile?.companyName || 'GarMer Supplier'} 
-                      {product.supplier?.supplierProfile?.isVerified && <Badge variant="gold">Verified</Badge>}
-                    </div>
-                    
-                    <div className={styles.productMeta}>
-                      <div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primary-navy)' }}>
-                          ${Number(product.price).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
-                          MOQ: {product.moq} pcs
-                        </div>
+            {products.map(product => {
+              const primaryImage = product.images?.find((img: any) => img.isPrimary)?.url || product.images?.[0]?.url;
+              return (
+                <Link href={`/products/${product.id}`} key={product.id}>
+                  <Card className={styles.productCard} hoverable>
+                    <div 
+                      className={styles.productImage} 
+                      style={primaryImage ? { backgroundImage: `url(${primaryImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                    />
+                    <div className={styles.productInfo}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginBottom: '0.25rem' }}>
+                        {product.category?.name || 'Garment'}
                       </div>
-                      <Button variant="outline" size="sm">Request</Button>
+                      <h3 className={styles.productTitle}>{product.name}</h3>
+                      <div className={styles.productSupplier}>
+                        {product.supplier?.companyName || 'Verified Supplier'} 
+                        {product.supplier?.isVerified && <Badge variant="gold">Verified</Badge>}
+                      </div>
+                      
+                      <div className={styles.productMeta}>
+                        <div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primary-navy)' }}>
+                            {product.price != null ? `$${Number(product.price).toFixed(2)}` : 'Inquire for price'}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+                            MOQ: {product.moq} pcs
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">View Details</Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </main>

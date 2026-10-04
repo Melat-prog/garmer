@@ -4,7 +4,7 @@ class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    // Get token from local storage or wherever it's stored
+    // Get token from local storage
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     
     const headers: Record<string, string> = {
@@ -64,16 +64,69 @@ class ApiService {
     return this.request('/categories');
   }
 
-  // Inquiry endpoints
-  async createInquiry(data: any) {
+  // Inquiry & RFQ endpoints
+  async createInquiry(data: { productId: string; quantity: number | string; country: string; message: string }) {
     return this.request('/inquiries', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
-  async getInquiries(role: 'BUYER' | 'SUPPLIER') {
-    return this.request(`/inquiries?role=${role}`);
+  async getInquiries(role?: 'BUYER' | 'SUPPLIER' | 'ADMIN') {
+    const url = role ? `/inquiries?role=${role}` : '/inquiries';
+    return this.request(url);
+  }
+
+  async getInquiry(id: string) {
+    return this.request(`/inquiries/${id}`);
+  }
+
+  async forwardInquiry(id: string, supplierId?: string) {
+    return this.request(`/inquiries/${id}/forward`, {
+      method: 'POST',
+      body: JSON.stringify({ supplierId })
+    });
+  }
+
+  async rejectInquiryByAdmin(id: string) {
+    return this.request(`/inquiries/${id}/admin-reject`, {
+      method: 'POST'
+    });
+  }
+
+  async submitSupplierQuotation(id: string, data: { unitPrice: number; shippingCost: number; deliveryTimeline: string; paymentTerms: string; supplierNotes?: string }) {
+    return this.request(`/inquiries/${id}/quotation`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async approveAndReleaseQuotation(id: string, data: { markupAmount: number; adminNotes?: string }) {
+    return this.request(`/inquiries/${id}/approve-quotation`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async acceptQuotation(id: string) {
+    return this.request(`/inquiries/${id}/accept`, {
+      method: 'POST'
+    });
+  }
+
+  async rejectQuotation(id: string) {
+    return this.request(`/inquiries/${id}/reject`, {
+      method: 'POST'
+    });
+  }
+
+  // Supplier endpoints
+  async getSuppliers() {
+    return this.request('/suppliers');
+  }
+
+  async getSupplier(id: string) {
+    return this.request(`/suppliers/${id}`);
   }
 }
 

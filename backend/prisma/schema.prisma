@@ -14,9 +14,16 @@ enum Role {
 }
 
 enum InquiryStatus {
-  PENDING
-  RESPONDED
-  CLOSED
+  PENDING_ADMIN_REVIEW
+  REJECTED_BY_ADMIN
+  FORWARDED_TO_SUPPLIER
+  SUPPLIER_RESPONDED
+  PENDING_ADMIN_APPROVAL
+  QUOTE_RELEASED_TO_BUYER
+  BUYER_ACCEPTED
+  BUYER_REJECTED
+  CANCELLED
+  COMPLETED
 }
 
 enum NotificationType {
@@ -70,6 +77,7 @@ model SupplierProfile {
   certificates      Certificate[]
   reviews           Review[]
   inquiries         Inquiry[]
+  quotations        Quotation[]
   favoritedBy       FavoriteSupplier[]
 }
 
@@ -145,11 +153,37 @@ model Inquiry {
   quantity    Int
   country     String
   message     String
-  status      InquiryStatus @default(PENDING)
+  status      InquiryStatus @default(PENDING_ADMIN_REVIEW)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  quotation    Quotation?
   conversation Conversation?
+}
+
+model Quotation {
+  id               String          @id @default(uuid())
+  inquiryId        String          @unique
+  inquiry          Inquiry         @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  supplierId       String
+  supplier         SupplierProfile @relation(fields: [supplierId], references: [id])
+  
+  unitPrice        Float
+  shippingCost     Float
+  deliveryTimeline String
+  paymentTerms     String
+  supplierNotes    String?
+  submittedAt      DateTime        @default(now())
+
+  markupAmount     Float           @default(0)
+  finalUnitPrice   Float?
+  finalTotalPrice  Float?
+  adminNotes       String?
+  approvedAt       DateTime?
+  releasedAt       DateTime?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model Conversation {
